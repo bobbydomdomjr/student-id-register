@@ -86,7 +86,7 @@ if (!isset($_SESSION['admin']) || $_SESSION['role']!=='staff') {
       <div class="col">
         <div class="card h-100 shadow-sm">
           <div class="card-header bg-warning text-dark">
-            <h6 class="mb-0">Pending</h6>
+            <h6 class="mb-0">Waiting</h6>
           </div>
           <div class="card-body p-2 table-responsive">
             <table class="table table-sm mb-0">
@@ -124,7 +124,7 @@ if (!isset($_SESSION['admin']) || $_SESSION['role']!=='staff') {
       <div class="col">
         <div class="card h-100 shadow-sm">
           <div class="card-header bg-success text-white">
-            <h6 class="mb-0">Done</h6>
+            <h6 class="mb-0">Completed</h6>
           </div>
           <div class="card-body p-2 table-responsive">
             <table class="table table-sm mb-0">

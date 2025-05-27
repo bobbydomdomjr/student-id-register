@@ -30,7 +30,7 @@ $regs = $stmt->get_result();
 // 4) Logs
 $logRes = $conn->query("SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50");
 
-// 5) Build course-by-status
+// 5) Course-by-status
 $courseByStatus = [];
 foreach (array_merge(['all'], $allowed) as $st) {
     $courseByStatus[$st] = [];
@@ -43,15 +43,14 @@ $rs = $conn->query("
 while ($r = $rs->fetch_assoc()) {
     $courseByStatus[$r['status']][$r['course']] = (int)$r['cnt'];
 }
-# Also build the 'all' bucket
 foreach ($courseByStatus as $st => $arr) {
     if ($st==='all') continue;
-    foreach ($arr as $course => $cnt) {
-        $courseByStatus['all'][$course] = ($courseByStatus['all'][$course] ?? 0) + $cnt;
+    foreach ($arr as $c => $cnt) {
+        $courseByStatus['all'][$c] = ($courseByStatus['all'][$c] ?? 0) + $cnt;
     }
 }
 
-// 6) Build monthly-by-status
+// 6) Monthly-by-status
 $monthlyByStatus = [];
 foreach (array_merge(['all'], $allowed) as $st) {
     $monthlyByStatus[$st] = [];
@@ -72,12 +71,20 @@ foreach ($monthlyByStatus as $st => $arr) {
     }
 }
 
-// 7) Status breakdown data
+// 7) Status breakdown for chart
 $statusChartData = [
-    ['label'=>'Pending',    'count'=>$pending,    'color'=>'#ffc107'],
-    ['label'=>'Processing', 'count'=>$processing, 'color'=>'#28a745'],
-    ['label'=>'Completed',  'count'=>$done,       'color'=>'#17a2b8'],
-    ['label'=>'No-show',    'count'=>$noshow,     'color'=>'#dc3545'],
+    ['label'=>'Waiting',    'count'=>$pending,    'color'=>'#ffc107','raw'=>'pending'],
+    ['label'=>'Processing', 'count'=>$processing, 'color'=>'#28a745','raw'=>'processing'],
+    ['label'=>'Completed',  'count'=>$done,       'color'=>'#17a2b8','raw'=>'done'],
+    ['label'=>'No-Show',    'count'=>$noshow,     'color'=>'#dc3545','raw'=>'no-show'],
+];
+
+// 8) Status label map for table
+$statusLabelMap = [
+    'pending'    => 'Waiting',
+    'processing' => 'Processing',
+    'done'       => 'Completed',
+    'no-show'    => 'No-Show'
 ];
 ?>
 <!DOCTYPE html>
@@ -85,6 +92,7 @@ $statusChartData = [
 <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Reports & Logs</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
@@ -92,7 +100,7 @@ $statusChartData = [
         body { margin:0; }
         .home-section { margin-left:250px; padding:2rem; background:#f8f9fa; min-height:100vh; transition: margin-left .3s; }
         .sidebar.open ~ .home-section { margin-left:80px; }
-        @media (max-width:768px) { .sidebar {width:0!important;} .sidebar.open {width:250px;} .home-section {margin-left:0;} }
+        @media (max-width:768px) { .sidebar{width:0!important;} .sidebar.open{width:250px!important;} .home-section{margin-left:0;} }
         .stat-card { border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,.1); }
         .stat-icon { font-size:1.5rem; opacity:.8; }
         .chart-container { max-width:700px; }
@@ -101,29 +109,33 @@ $statusChartData = [
 <body>
 <?php include __DIR__ . '/../includes/sidebar.php'; ?>
 <section class="home-section p-4">
-    <h2>Reports &amp; Logs</h2><hr>
+    <h2>Reports &amp; Logs</h2>
+    <hr>
 
-    <ul class="nav nav-tabs mb-4" id="tabs">
-        <li class="nav-item"><a class="nav-link active" data-bs-target="#reportsTab">Reports</a></li>
-        <li class="nav-item"><a class="nav-link"       data-bs-target="#logsTab">Logs</a></li>
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#reportsTab" role="tab">Reports</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#logsTab" role="tab">Logs</a>
+        </li>
     </ul>
 
     <div class="tab-content">
-
         <!-- REPORTS -->
-        <div class="tab-pane fade show active text-center" id="reportsTab">
-
-            <!-- Summary -->
-            <div class="row g-3 mb-4">
+        <div class="tab-pane fade show active text-center" id="reportsTab" role="tabpanel">
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4 justify-content-center">
                 <?php foreach ([
                                    ['label'=>'Total','count'=>$totalAll,'bg'=>'primary','icon'=>'users'],
                                    ['label'=>'Today','count'=>$totalToday,'bg'=>'secondary','icon'=>'calendar-day'],
-                                   ['label'=>'Pending','count'=>$pending,'bg'=>'warning','icon'=>'hourglass-start'],
+                                   ['label'=>'Waiting','count'=>$pending,'bg'=>'warning','icon'=>'hourglass-start'],
                                    ['label'=>'Processing','count'=>$processing,'bg'=>'success','icon'=>'spinner'],
                                    ['label'=>'Completed','count'=>$done,'bg'=>'info','icon'=>'check-circle'],
-                                   ['label'=>'No-show','count'=>$noshow,'bg'=>'danger','icon'=>'user-times'],
+                                   ['label'=>'No-Show','count'=>$noshow,'bg'=>'danger','icon'=>'user-times'],
                                ] as $c): ?>
-                    <div class="col-md-2">
+                    <div class="col-6 col-md-2">
                         <div class="card text-white bg-<?= $c['bg'] ?> stat-card p-3">
                             <div><i class="fas fa-<?= $c['icon'] ?> stat-icon"></i> <?= $c['label'] ?></div>
                             <div class="h3"><?= $c['count'] ?></div>
@@ -132,29 +144,34 @@ $statusChartData = [
                 <?php endforeach; ?>
             </div>
 
-            <!-- Table Filter -->
-            <div class="d-flex align-items-center just mb-3">
+            <!-- Registrations Table Filter -->
+            <div class="d-flex justify-content-center mb-3">
                 <label class="me-2">Status:</label>
                 <select id="statusFilter" class="form-select w-auto">
                     <?php foreach ($allowed as $opt): ?>
                         <option value="<?= $opt ?>" <?= $status===$opt?'selected':'' ?>>
-                            <?= $opt==='all'?'All':ucfirst($opt) ?>
+                            <?= $opt==='all'?'All':ucfirst($statusLabelMap[$opt] ?? $opt) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
+
+            <!-- Registrations Table -->
             <div class="table-responsive mb-5">
                 <table class="table table-striped">
-                    <thead class="table-dark">
+                    <thead class="table-dark text-center">
                     <tr><th>#</th><th>Student No.</th><th>Name</th><th>Status</th><th>When</th></tr>
                     </thead>
                     <tbody>
-                    <?php $i=1; while($r=$regs->fetch_assoc()): ?>
+                    <?php $i=1; while($r=$regs->fetch_assoc()):
+                        $raw = strtolower($r['status']);
+                        $disp = $statusLabelMap[$raw] ?? ucfirst($raw);
+                        ?>
                         <tr>
                             <td><?= $i++ ?></td>
                             <td><?= htmlspecialchars($r['studentno']) ?></td>
                             <td><?= htmlspecialchars("{$r['lastname']}, {$r['firstname']}") ?></td>
-                            <td><?= ucfirst($r['status']) ?></td>
+                            <td><?= $disp ?></td>
                             <td><?= $r['registration_date'] ?></td>
                         </tr>
                     <?php endwhile; ?>
@@ -162,7 +179,7 @@ $statusChartData = [
                 </table>
             </div>
 
-            <!-- Status Breakdown -->
+            <!-- Status Breakdown Chart -->
             <h5>Status Breakdown</h5>
             <div class="d-flex justify-content-center mb-5">
                 <div class="chart-container">
@@ -170,14 +187,14 @@ $statusChartData = [
                 </div>
             </div>
 
-            <!-- Course Enrollment -->
+            <!-- Course Enrollment Chart -->
             <h5>Course Enrollment</h5>
-            <div class="d-flex align-items-center justify-content-center mb-2">
+            <div class="d-flex justify-content-center mb-2">
                 <label class="me-2">Status:</label>
                 <select id="courseStatusFilter" class="form-select w-auto me-4">
                     <?php foreach ($allowed as $opt): ?>
                         <option value="<?= $opt ?>" <?= $status===$opt?'selected':'' ?>>
-                            <?= $opt==='all'?'All':ucfirst($opt) ?>
+                            <?= $opt==='all'?'All':ucfirst($statusLabelMap[$opt] ?? $opt) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -196,14 +213,14 @@ $statusChartData = [
                 </div>
             </div>
 
-            <!-- Monthly Registrations -->
+            <!-- Monthly Registrations Chart -->
             <h5>Monthly Registrations</h5>
-            <div class="d-flex align-items-center justify-content-center mb-2">
+            <div class="d-flex justify-content-center mb-2">
                 <label class="me-2">Status:</label>
                 <select id="monthStatusFilter" class="form-select w-auto me-4">
                     <?php foreach ($allowed as $opt): ?>
                         <option value="<?= $opt ?>" <?= $status===$opt?'selected':'' ?>>
-                            <?= $opt==='all'?'All':ucfirst($opt) ?>
+                            <?= $opt==='all'?'All':ucfirst($statusLabelMap[$opt] ?? $opt) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -219,7 +236,7 @@ $statusChartData = [
         </div>
 
         <!-- LOGS -->
-        <div class="tab-pane fade" id="logsTab">
+        <div class="tab-pane fade" id="logsTab" role="tabpanel">
             <h5>Recent Notifications</h5>
             <div class="table-responsive">
                 <table class="table table-sm">
@@ -240,127 +257,93 @@ $statusChartData = [
                 </table>
             </div>
         </div>
-
     </div>
 </section>
 
+<!-- Bootstrap & Chart.js -->
 <script src="./../dist/bootstrap/js/bootstrap.bundle.min.js"></script>
-
-<!-- Chart.js + adapter -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-<script>
-    // Tab switch
-    document.querySelectorAll('#tabs .nav-link').forEach(l => {
-        l.onclick = () => {
-            document.querySelectorAll('#tabs .nav-link').forEach(x=>x.classList.remove('active'));
-            document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('show','active'));
-            l.classList.add('active');
-            document.querySelector(l.dataset.bsTarget).classList.add('show','active');
-        };
-    });
 
+<script>
     // Table filter
     document.getElementById('statusFilter').onchange = function(){
-        window.location.href = 'reports.php?status=' + encodeURIComponent(this.value);
+        window.location = 'reports.php?status=' + this.value;
     };
 
-    // Data for JS
-    const statusChartData = <?= json_encode($statusChartData) ?>;
-    const courseByStatus   = <?= json_encode($courseByStatus) ?>;
-    const monthlyByStatus  = <?= json_encode($monthlyByStatus) ?>;
-
-    // Status Breakdown (bar)
-    const sc = statusChartData;
+    // Status Breakdown Chart
+    const scData = <?= json_encode($statusChartData) ?>;
     new Chart(document.getElementById('statusChart'), {
         type: 'bar',
         data: {
-            labels: sc.map(d=>d.label),
+            labels: scData.map(d=>d.label),
             datasets: [{
-                data: sc.map(d=>d.count),
-                backgroundColor: sc.map(d=>d.color),
-                label: 'Status Counts',
+                label: 'Count',
+                data: scData.map(d=>d.count),
+                backgroundColor: scData.map(d=>d.color)
             }]
         },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
+        options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
     });
 
-    // Course (pie) with dual filters
-    const courseChart = new Chart(
-        document.getElementById('courseChart'), {
-            type: 'pie',
-            data: { labels:[], datasets:[{ data:[], backgroundColor: [] }] }
-        });
-
+    // Course Chart
+    const courseChart = new Chart(document.getElementById('courseChart'), {
+        type: 'pie',
+        data: { labels:[], datasets:[{ data:[], backgroundColor:[] }] }
+    });
     function updateCourseChart(){
         const st = document.getElementById('courseStatusFilter').value;
         const cf = document.getElementById('courseFilter').value;
-        const dataObj = courseByStatus[st] || {};
-        const labels = [], data=[];
-        for (let c in dataObj){
-            if (!cf||cf===c){
-                labels.push(c);
-                data.push(dataObj[c]);
-            }
-        }
-        if (!data.length){
-            courseChart.canvas.style.display='none'; document.getElementById('courseNoData').style.display='block';
+        const obj=<?= json_encode($courseByStatus) ?>[st]||{};
+        const labels=[], data=[];
+        for(let c in obj) if(!cf||cf===c){labels.push(c);data.push(obj[c]);}
+        if(!data.length){
+            courseChart.canvas.style.display='none';
+            document.getElementById('courseNoData').style.display='block';
         } else {
-            courseChart.canvas.style.display='block'; document.getElementById('courseNoData').style.display='none';
-            courseChart.data.labels = labels;
-            courseChart.data.datasets[0].data = data;
-            courseChart.data.datasets[0].backgroundColor = labels.map((_,i)=>['#007bff','#28a745','#ffc107','#dc3545','#17a2b8'][i%5]);
+            courseChart.canvas.style.display='block';
+            document.getElementById('courseNoData').style.display='none';
+            courseChart.data.labels=labels;
+            courseChart.data.datasets[0].data=data;
+            courseChart.data.datasets[0].backgroundColor=labels.map((_,i)=>['#007bff','#28a745','#ffc107','#dc3545','#17a2b8'][i%5]);
             courseChart.update();
         }
     }
-    document.getElementById('courseStatusFilter').onchange = updateCourseChart;
-    document.getElementById('courseFilter').onchange = updateCourseChart;
+    document.getElementById('courseStatusFilter').onchange=updateCourseChart;
+    document.getElementById('courseFilter').onchange=updateCourseChart;
     updateCourseChart();
 
-    // Monthly (line) with dual filters
-    const monthlyChart = new Chart(
-        document.getElementById('monthlyChart'), {
-            type: 'line',
-            data: { labels:[], datasets:[{ label:'Regs', data:[], fill:true }] },
-            options: {
-                responsive:true,
-                scales:{
-                    x:{ type:'time', time:{ parser:'yyyy-MM', unit:'month', tooltipFormat:'yyyy-MM' } },
-                    y:{ beginAtZero:true }
-                }
+    // Monthly Chart
+    const monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+        type:'line',
+        data:{labels:[],datasets:[{label:'Regs',data:[],fill:true}]},
+        options:{
+            responsive:true,
+            scales:{
+                x:{type:'time',time:{parser:'yyyy-MM',unit:'month',tooltipFormat:'yyyy-MM'}},
+                y:{beginAtZero:true}
             }
-        });
-
+        }
+    });
     function updateMonthlyChart(){
         const st = document.getElementById('monthStatusFilter').value;
         const mf = document.getElementById('monthFilter').value;
-        const dataObj = monthlyByStatus[st] || {};
-        const labels = [], data=[];
-        for (let m in dataObj){
-            if (!mf||m.startsWith(mf)){
-                labels.push(m);
-                data.push(dataObj[m]);
-            }
-        }
-        if (!data.length){
-            monthlyChart.canvas.style.display='none'; document.getElementById('monthlyNoData').style.display='block';
+        const obj=<?= json_encode($monthlyByStatus) ?>[st]||{};
+        const labels=[], data=[];
+        for(let m in obj) if(!mf||m.startsWith(mf)){labels.push(m);data.push(obj[m]);}
+        if(!data.length){
+            monthlyChart.canvas.style.display='none';
+            document.getElementById('monthlyNoData').style.display='block';
         } else {
-            monthlyChart.canvas.style.display='block'; document.getElementById('monthlyNoData').style.display='none';
-            monthlyChart.data.labels = labels;
-            monthlyChart.data.datasets[0].data = data;
+            monthlyChart.canvas.style.display='block';
+            document.getElementById('monthlyNoData').style.display='none';
+            monthlyChart.data.labels=labels;
+            monthlyChart.data.datasets[0].data=data;
             monthlyChart.update();
         }
     }
-    document.getElementById('monthStatusFilter').onchange = updateMonthlyChart;
-    document.getElementById('monthFilter').onchange = updateMonthlyChart;
+    document.getElementById('monthStatusFilter').onchange=updateMonthlyChart;
+    document.getElementById('monthFilter').onchange=updateMonthlyChart;
     updateMonthlyChart();
 </script>
 </body>

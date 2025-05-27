@@ -30,6 +30,21 @@ $stmt2->bind_param('s', $search_like);
 $stmt2->execute();
 $total_students = $stmt2->get_result()->fetch_assoc()['total'];
 $total_pages    = (int)ceil($total_students / $limit);
+
+// Status → Frontend label map
+$statusLabelMap = [
+    'pending'    => 'Waiting',
+    'processing' => 'Processing',
+    'done'       => 'Completed',
+    'no-show'    => 'No-Show'
+];
+// Display label → badge color map
+$badgeColorMap = [
+    'Waiting'     => 'warning',
+    'Processing'  => 'success',
+    'Completed'   => 'info',
+    'No-Show'     => 'danger'
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -54,30 +69,17 @@ $total_pages    = (int)ceil($total_students / $limit);
         .table-sm { font-size:.875rem; }
         .table-hover tbody tr:hover { background:rgba(0,0,0,.03); }
         .pagination .page-link { border-radius:.375rem; padding:.375rem .75rem; font-size:.875rem; }
-        /* 1) Push content over by sidebar width */
         .home-section {
             margin-left: 250px;
             transition: margin-left 0.3s ease;
         }
-
-        /* 2) When sidebar is collapsed, shrink the margin */
         .sidebar.open ~ .home-section {
             margin-left: 80px;
         }
-
-        /* 3) On small screens, hide sidebar by default and make content full width */
         @media (max-width: 768px) {
-            .sidebar {
-                position: absolute;
-                width: 0;
-                transition: width 0.3s ease;
-            }
-            .sidebar.open {
-                width: 250px;
-            }
-            .home-section {
-                margin-left: 0;
-            }
+            .sidebar { position: absolute; width: 0; transition: width 0.3s ease; }
+            .sidebar.open { width: 250px; }
+            .home-section { margin-left: 0; }
         }
     </style>
 </head>
@@ -124,6 +126,12 @@ $total_pages    = (int)ceil($total_students / $limit);
                 </thead>
                 <tbody>
                 <?php while ($s = $result_students->fetch_assoc()): ?>
+                    <?php
+                    // Map raw status to display label
+                    $raw = strtolower($s['status']);
+                    $disp = $statusLabelMap[$raw] ?? ucfirst($raw);
+                    $clr  = $badgeColorMap[$disp] ?? 'secondary';
+                    ?>
                     <tr>
                         <td class="text-center align-middle"><?= htmlspecialchars($s['studentno']) ?></td>
                         <td class="align-middle">
@@ -131,12 +139,7 @@ $total_pages    = (int)ceil($total_students / $limit);
                         </td>
                         <td class="text-center align-middle"><?= htmlspecialchars($s['registration_date']) ?></td>
                         <td class="text-center align-middle">
-                            <?php
-                            $st = ucfirst(strtolower($s['status']));
-                            $map = ['Pending'=>'warning','Processing'=>'success','Done'=>'info'];
-                            $clr = $map[$st] ?? 'secondary';
-                            ?>
-                            <span class="badge bg-<?= $clr ?>"><?= $st ?></span>
+                            <span class="badge bg-<?= $clr ?>"><?= $disp ?></span>
                         </td>
                         <td class="text-center align-middle">
                             <button class="btn btn-outline-info btn-sm view-btn" data-id="<?= $s['id'] ?>">
@@ -178,6 +181,5 @@ $total_pages    = (int)ceil($total_students / $limit);
 
 <!-- Bootstrap 5 Bundle -->
 <script src="./../dist/bootstrap/js/bootstrap.bundle.min.js"></script>
-<!-- Your existing JS for view-modal, notify, etc. -->
 </body>
 </html>

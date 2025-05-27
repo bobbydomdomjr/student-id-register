@@ -80,7 +80,7 @@ if (!isset($_SESSION['admin']) || $_SESSION['role']!=='staff') {
       <!-- Status Cards -->
       <div class="col-md-2">
         <div class="card card-hover text-center p-3">
-          <h6>Pending</h6>
+          <h6>Waiting</h6>
           <span id="count-pending" class="badge bg-warning fs-4">–</span>
         </div>
       </div>
@@ -92,7 +92,7 @@ if (!isset($_SESSION['admin']) || $_SESSION['role']!=='staff') {
       </div>
       <div class="col-md-2">
         <div class="card card-hover text-center p-3">
-          <h6>Done</h6>
+          <h6>Completed</h6>
           <span id="count-done" class="badge bg-success fs-4">–</span>
         </div>
       </div>
