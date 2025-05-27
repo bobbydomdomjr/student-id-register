@@ -13,7 +13,9 @@ $noshow     = getCount($conn, "SELECT COUNT(*) FROM student_registration WHERE s
 
 // 2) Status filter
 $allowed = ['all','pending','processing','done','no-show'];
-$status  = in_array($_GET['status'] ?? 'all', $allowed) ? $_GET['status'] : 'all';
+$status  = (isset($_GET['status']) && in_array($_GET['status'], $allowed))
+    ? $_GET['status']
+    : 'all';
 
 // 3) Table data
 if ($status === 'all') {
@@ -241,6 +243,8 @@ $statusChartData = [
 
     </div>
 </section>
+
+<script src="./../dist/bootstrap/js/bootstrap.bundle.min.js"></script>
 
 <!-- Chart.js + adapter -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
