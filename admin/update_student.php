@@ -1,14 +1,14 @@
 <?php
 session_start();
-if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'superadmin') {
-    header("Location: login.php");
+if (!isset($_SESSION['admin'])) {
+    header("Location: index.php");
     exit();
 }
 include('../db.php');
 
 // Check if the form is submitted
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $id = $_POST['id'];
+    $id = $_POST['id']; // id
     $studentno = $_POST['studentno'];
     $firstname = $_POST['firstname'];
     $middleinitial = $_POST['middleinitial'];

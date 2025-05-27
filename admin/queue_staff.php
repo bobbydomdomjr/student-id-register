@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['admin'])) {
-    header("Location: login.php");
+    header("Location: index.php");
     exit();
 }
 include('../db.php');
@@ -193,13 +193,6 @@ $total_done = getCount($conn, "SELECT COUNT(*) FROM student_registration WHERE s
                     <span class="links_name">Student Management</span>
                 </a>
                 <span class="tooltip">Student Management</span>
-            </li>
-            <li>
-                <a href="queue_staff.php">
-                    <i class="bx bx-add-to-queue"></i>
-                    <span class="links_name">Queue Management</span>
-                </a>
-                <span class="tooltip">Queue Management</span>
             </li>
             <li>
                 <a href="logout.php" onclick="return confirmLogout()">

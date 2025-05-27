@@ -1,35 +1,18 @@
 <?php
-session_start();
-include('../db.php'); // Include database connection
+// admin/delete_account.php
+require_once __DIR__ . '/../includes/init.php';
 
-// Super admin only
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
-    http_response_code(403);
-    echo "Unauthorized";
-    exit();
+$id = (int)($_GET['id'] ?? 0);
+// block superadmin (usually id=1)
+if (!$id || $id===1) {
+    $_SESSION['flash'] = ['type'=>'danger','msg'=>'Cannot delete this account.'];
+    header('Location: user_management.php');
+    exit;
 }
 
-// Check if ID is provided
-if (isset($_GET['id'])) {
-    $id = intval($_GET['id']);
+$stmt = $conn->prepare("DELETE FROM admin WHERE id=? AND role IN ('admin','staff')");
+$stmt->bind_param('i',$id);
+$stmt->execute();
 
-    // Prevent deleting yourself (optional safety)
-    if ($id == $_SESSION['id']) {
-        $_SESSION['error'] = "You cannot delete your own account.";
-        header("Location: user_management.php");
-        exit();
-    }
-
-    $stmt = $conn->prepare("DELETE FROM admin WHERE id = ?");
-    $stmt->bind_param("i", $id);
-
-    if ($stmt->execute()) {
-        $_SESSION['success'] = "Account deleted successfully!";
-    } else {
-        $_SESSION['error'] = "Failed to delete account.";
-    }
-}
-
-header("Location: user_management.php");
-exit();
-?>
+$_SESSION['flash'] = ['type'=>'success','msg'=>'Account deleted.'];
+header('Location: user_management.php');

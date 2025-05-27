@@ -32,7 +32,7 @@ while ($row = mysqli_fetch_assoc($result)) {
     $pdf->Cell(50,10,$row['email'],1);
     $pdf->Cell(50,10,$row['course'],1);
     $pdf->Cell(20,10,$row['yearlevel'],1);
-    $pdf->Cell(10,10,$row['block'],1);
+    $pdf->Cell(10,10,'Blk',1);
     $pdf->Cell(30,10,$row['phone'],1);
     $pdf->Ln();
 }

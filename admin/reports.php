@@ -1,265 +1,363 @@
 <?php
-session_start();
-if (!isset($_SESSION['admin'])) {
-    header("Location: login.php");
-    exit();
+// admin/reports.php
+require_once __DIR__ . '/../includes/init.php';
+
+// 1) Summary counts
+$today      = date('Y-m-d');
+$totalAll   = getCount($conn, "SELECT COUNT(*) FROM student_registration");
+$totalToday = getCount($conn, "SELECT COUNT(*) FROM student_registration WHERE DATE(registration_date) = '$today'");
+$pending    = getCount($conn, "SELECT COUNT(*) FROM student_registration WHERE status='pending'");
+$processing = getCount($conn, "SELECT COUNT(*) FROM student_registration WHERE status='processing'");
+$done       = getCount($conn, "SELECT COUNT(*) FROM student_registration WHERE status='done'");
+$noshow     = getCount($conn, "SELECT COUNT(*) FROM student_registration WHERE status='no-show'");
+
+// 2) Status filter
+$allowed = ['all','pending','processing','done','no-show'];
+$status  = in_array($_GET['status'] ?? 'all', $allowed) ? $_GET['status'] : 'all';
+
+// 3) Table data
+if ($status === 'all') {
+    $stmt = $conn->prepare("SELECT * FROM student_registration ORDER BY registration_date DESC");
+} else {
+    $stmt = $conn->prepare("SELECT * FROM student_registration WHERE status = ? ORDER BY registration_date DESC");
+    $stmt->bind_param('s', $status);
 }
-include('../db.php');
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+$stmt->execute();
+$regs = $stmt->get_result();
 
-// Fetch course-wise and monthly registration stats
-$sql_course = "SELECT course, COUNT(*) AS count FROM student_registration GROUP BY course";
-$result_course = $conn->query($sql_course);
+// 4) Logs
+$logRes = $conn->query("SELECT * FROM notifications ORDER BY created_at DESC LIMIT 50");
 
-// Check if query execution was successful
-if (!$result_course) {
-    die("Error executing query (course stats): " . $conn->error);
+// 5) Build course-by-status
+$courseByStatus = [];
+foreach (array_merge(['all'], $allowed) as $st) {
+    $courseByStatus[$st] = [];
+}
+$rs = $conn->query("
+  SELECT status, course, COUNT(*) AS cnt
+    FROM student_registration
+   GROUP BY status, course
+");
+while ($r = $rs->fetch_assoc()) {
+    $courseByStatus[$r['status']][$r['course']] = (int)$r['cnt'];
+}
+# Also build the 'all' bucket
+foreach ($courseByStatus as $st => $arr) {
+    if ($st==='all') continue;
+    foreach ($arr as $course => $cnt) {
+        $courseByStatus['all'][$course] = ($courseByStatus['all'][$course] ?? 0) + $cnt;
+    }
 }
 
-$sql_monthly = "SELECT DATE_FORMAT(registration_date, '%Y-%m') AS month, COUNT(*) AS count FROM student_registration GROUP BY month ORDER BY month";
-$result_monthly = $conn->query($sql_monthly);
-
-// Check if query execution was successful
-if (!$result_monthly) {
-    die("Error executing query (monthly stats): " . $conn->error);
+// 6) Build monthly-by-status
+$monthlyByStatus = [];
+foreach (array_merge(['all'], $allowed) as $st) {
+    $monthlyByStatus[$st] = [];
+}
+$rs2 = $conn->query("
+  SELECT status, DATE_FORMAT(registration_date,'%Y-%m') AS m, COUNT(*) AS cnt
+    FROM student_registration
+   GROUP BY status, m
+   ORDER BY m
+");
+while ($r = $rs2->fetch_assoc()) {
+    $monthlyByStatus[$r['status']][$r['m']] = (int)$r['cnt'];
+}
+foreach ($monthlyByStatus as $st => $arr) {
+    if ($st==='all') continue;
+    foreach ($arr as $m => $cnt) {
+        $monthlyByStatus['all'][$m] = ($monthlyByStatus['all'][$m] ?? 0) + $cnt;
+    }
 }
 
-// Fetch summary data
-$sql_summary = "SELECT 
-                    COUNT(*) AS total_students, 
-                    COUNT(DISTINCT course) AS total_courses, 
-                    COUNT(DISTINCT DATE_FORMAT(registration_date, '%Y-%m')) AS total_months
-                FROM student_registration";
-$result_summary = $conn->query($sql_summary);
-
-// Check if query execution was successful
-if (!$result_summary) {
-    die("Error executing query (summary stats): " . $conn->error);
-}
-
-$summary = $result_summary->fetch_assoc();
+// 7) Status breakdown data
+$statusChartData = [
+    ['label'=>'Pending',    'count'=>$pending,    'color'=>'#ffc107'],
+    ['label'=>'Processing', 'count'=>$processing, 'color'=>'#28a745'],
+    ['label'=>'Completed',  'count'=>$done,       'color'=>'#17a2b8'],
+    ['label'=>'No-show',    'count'=>$noshow,     'color'=>'#dc3545'],
+];
 ?>
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports - Admin</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Reports & Logs</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/boxicons@2.0.7/css/boxicons.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            display: flex;
-            margin: 0;
-        }
-        #sidebar {
-            height: 100vh;
-            width: 250px;
-            background-color: #343a40;
-            color: white;
-        }
-        #sidebar a {
-            padding: 15px;
-            text-decoration: none;
-            color: white;
-            display: block;
-        }
-        #sidebar a:hover, #sidebar a.active {
-            background-color: #495057;
-        }
-        #content {
-            flex-grow: 1;
-            padding: 20px;
-        }
-        canvas {
-            max-height: 400px;
-        }
-        .summary-card {
-            text-align: center;
-            border-radius: 8px;
-            padding: 20px;
-            background-color: #f8f9fa;
-        }
-        .summary-icon {
-            font-size: 36px;
-            margin-bottom: 10px;
-            color: #17a2b8;
-        }
+        body { margin:0; }
+        .home-section { margin-left:250px; padding:2rem; background:#f8f9fa; min-height:100vh; transition: margin-left .3s; }
+        .sidebar.open ~ .home-section { margin-left:80px; }
+        @media (max-width:768px) { .sidebar {width:0!important;} .sidebar.open {width:250px;} .home-section {margin-left:0;} }
+        .stat-card { border-radius:16px; box-shadow:0 4px 16px rgba(0,0,0,.1); }
+        .stat-icon { font-size:1.5rem; opacity:.8; }
+        .chart-container { max-width:700px; }
     </style>
 </head>
 <body>
+<?php include __DIR__ . '/../includes/sidebar.php'; ?>
+<section class="home-section p-4">
+    <h2>Reports &amp; Logs</h2><hr>
 
-    <!-- Sidebar -->
-    <div id="sidebar">
-        <h4 class="text-center py-3">Admin Panel</h4>
-        <a href="dashboard.php"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <a href="students.php"><i class="fas fa-user-graduate"></i> Students</a>
-        <a href="reports.php" class="active"><i class="fas fa-chart-bar"></i> Reports</a>
-        <a href="logout.php" onclick="return confirmLogout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
-    </div>
+    <ul class="nav nav-tabs mb-4" id="tabs">
+        <li class="nav-item"><a class="nav-link active" data-bs-target="#reportsTab">Reports</a></li>
+        <li class="nav-item"><a class="nav-link"       data-bs-target="#logsTab">Logs</a></li>
+    </ul>
 
-    <!-- Content Area -->
-    <div id="content">
-        <div class="container-fluid">
-            <h2 class="mb-4"><i class="fas fa-chart-bar"></i> Reports & Statistics</h2>
+    <div class="tab-content">
 
-            <!-- Summary Cards -->
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <div class="summary-card shadow-sm">
-                        <i class="fas fa-users summary-icon"></i>
-                        <h5>Total Students</h5>
-                        <h4><?php echo $summary['total_students']; ?></h4>
+        <!-- REPORTS -->
+        <div class="tab-pane fade show active text-center" id="reportsTab">
+
+            <!-- Summary -->
+            <div class="row g-3 mb-4">
+                <?php foreach ([
+                                   ['label'=>'Total','count'=>$totalAll,'bg'=>'primary','icon'=>'users'],
+                                   ['label'=>'Today','count'=>$totalToday,'bg'=>'secondary','icon'=>'calendar-day'],
+                                   ['label'=>'Pending','count'=>$pending,'bg'=>'warning','icon'=>'hourglass-start'],
+                                   ['label'=>'Processing','count'=>$processing,'bg'=>'success','icon'=>'spinner'],
+                                   ['label'=>'Completed','count'=>$done,'bg'=>'info','icon'=>'check-circle'],
+                                   ['label'=>'No-show','count'=>$noshow,'bg'=>'danger','icon'=>'user-times'],
+                               ] as $c): ?>
+                    <div class="col-md-2">
+                        <div class="card text-white bg-<?= $c['bg'] ?> stat-card p-3">
+                            <div><i class="fas fa-<?= $c['icon'] ?> stat-icon"></i> <?= $c['label'] ?></div>
+                            <div class="h3"><?= $c['count'] ?></div>
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="summary-card shadow-sm">
-                        <i class="fas fa-book summary-icon"></i>
-                        <h5>Total Courses</h5>
-                        <h4><?php echo $summary['total_courses']; ?></h4>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="summary-card shadow-sm">
-                        <i class="fas fa-calendar-alt summary-icon"></i>
-                        <h5>Monthly Registrations</h5>
-                        <h4><?php echo $summary['total_months']; ?></h4>
-                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Table Filter -->
+            <div class="d-flex align-items-center just mb-3">
+                <label class="me-2">Status:</label>
+                <select id="statusFilter" class="form-select w-auto">
+                    <?php foreach ($allowed as $opt): ?>
+                        <option value="<?= $opt ?>" <?= $status===$opt?'selected':'' ?>>
+                            <?= $opt==='all'?'All':ucfirst($opt) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="table-responsive mb-5">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                    <tr><th>#</th><th>Student No.</th><th>Name</th><th>Status</th><th>When</th></tr>
+                    </thead>
+                    <tbody>
+                    <?php $i=1; while($r=$regs->fetch_assoc()): ?>
+                        <tr>
+                            <td><?= $i++ ?></td>
+                            <td><?= htmlspecialchars($r['studentno']) ?></td>
+                            <td><?= htmlspecialchars("{$r['lastname']}, {$r['firstname']}") ?></td>
+                            <td><?= ucfirst($r['status']) ?></td>
+                            <td><?= $r['registration_date'] ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Status Breakdown -->
+            <h5>Status Breakdown</h5>
+            <div class="d-flex justify-content-center mb-5">
+                <div class="chart-container">
+                    <canvas id="statusChart"></canvas>
                 </div>
             </div>
 
-            <!-- Chart Filters -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <select id="courseFilter" class="form-control">
-                        <option value="">All Courses</option>
-                        <?php
-                        $result_course->data_seek(0);
-                        while ($row = $result_course->fetch_assoc()) {
-                            echo '<option value="' . $row['course'] . '">' . $row['course'] . '</option>';
-                        }
-                        ?>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <input type="month" id="monthFilter" class="form-control">
+            <!-- Course Enrollment -->
+            <h5>Course Enrollment</h5>
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <label class="me-2">Status:</label>
+                <select id="courseStatusFilter" class="form-select w-auto me-4">
+                    <?php foreach ($allowed as $opt): ?>
+                        <option value="<?= $opt ?>" <?= $status===$opt?'selected':'' ?>>
+                            <?= $opt==='all'?'All':ucfirst($opt) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <label class="me-2">Course:</label>
+                <select id="courseFilter" class="form-select w-auto">
+                    <option value="">All</option>
+                    <?php foreach (array_keys($courseByStatus['all']) as $c): ?>
+                        <option><?= htmlspecialchars($c) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="d-flex justify-content-center mb-5">
+                <div class="chart-container">
+                    <canvas id="courseChart"></canvas>
+                    <p id="courseNoData" class="text-center text-muted" style="display:none;">No data.</p>
                 </div>
             </div>
 
-            <!-- Charts -->
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <h5>Course Enrollment</h5>
-                    <canvas id="courseChart" style="display:none;"></canvas>
-                    <p id="courseNoData" class="text-muted text-center" style="display:none;">No data available for this filter.</p>
-                </div>
-                <div class="col-md-6 mb-4">
-                    <h5>Monthly Registrations</h5>
-                    <canvas id="monthlyChart" style="display:none;"></canvas>
-                    <p id="monthlyNoData" class="text-muted text-center" style="display:none;">No data available for this filter.</p>
+            <!-- Monthly Registrations -->
+            <h5>Monthly Registrations</h5>
+            <div class="d-flex align-items-center justify-content-center mb-2">
+                <label class="me-2">Status:</label>
+                <select id="monthStatusFilter" class="form-select w-auto me-4">
+                    <?php foreach ($allowed as $opt): ?>
+                        <option value="<?= $opt ?>" <?= $status===$opt?'selected':'' ?>>
+                            <?= $opt==='all'?'All':ucfirst($opt) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <label class="me-2">Month:</label>
+                <input type="month" id="monthFilter" class="form-control w-auto">
+            </div>
+            <div class="d-flex justify-content-center mb-5">
+                <div class="chart-container">
+                    <canvas id="monthlyChart"></canvas>
+                    <p id="monthlyNoData" class="text-center text-muted" style="display:none;">No data.</p>
                 </div>
             </div>
         </div>
+
+        <!-- LOGS -->
+        <div class="tab-pane fade" id="logsTab">
+            <h5>Recent Notifications</h5>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                    <tr><th>#</th><th>User ID</th><th>Message</th><th>When</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                    <?php $i=1; while($log=$logRes->fetch_assoc()): ?>
+                        <tr>
+                            <td><?= $i++ ?></td>
+                            <td><?= $log['user_id'] ?></td>
+                            <td><?= htmlspecialchars($log['message']) ?></td>
+                            <td><?= $log['created_at'] ?></td>
+                            <td><?= ucfirst($log['status']) ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
+</section>
 
-    <script>
-        // Course Data
-        const courseData = <?php
-            $data_course = [];
-            $result_course->data_seek(0);
-            while ($row = $result_course->fetch_assoc()) {
-                $data_course[] = ['course' => $row['course'], 'count' => $row['count']];
+<!-- Chart.js + adapter -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+    // Tab switch
+    document.querySelectorAll('#tabs .nav-link').forEach(l => {
+        l.onclick = () => {
+            document.querySelectorAll('#tabs .nav-link').forEach(x=>x.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('show','active'));
+            l.classList.add('active');
+            document.querySelector(l.dataset.bsTarget).classList.add('show','active');
+        };
+    });
+
+    // Table filter
+    document.getElementById('statusFilter').onchange = function(){
+        window.location.href = 'reports.php?status=' + encodeURIComponent(this.value);
+    };
+
+    // Data for JS
+    const statusChartData = <?= json_encode($statusChartData) ?>;
+    const courseByStatus   = <?= json_encode($courseByStatus) ?>;
+    const monthlyByStatus  = <?= json_encode($monthlyByStatus) ?>;
+
+    // Status Breakdown (bar)
+    const sc = statusChartData;
+    new Chart(document.getElementById('statusChart'), {
+        type: 'bar',
+        data: {
+            labels: sc.map(d=>d.label),
+            datasets: [{
+                data: sc.map(d=>d.count),
+                backgroundColor: sc.map(d=>d.color),
+                label: 'Status Counts',
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
             }
-            echo json_encode($data_course);
-        ?>;
-        const courseLabels = courseData.map(item => item.course);
-        const courseCounts = courseData.map(item => item.count);
+        }
+    });
 
-        // Monthly Data
-        const monthlyData = <?php
-            $data_monthly = [];
-            while ($row = $result_monthly->fetch_assoc()) {
-                $data_monthly[] = ['month' => $row['month'], 'count' => $row['count']];
-            }
-            echo json_encode($data_monthly);
-        ?>;
-        const monthlyLabels = monthlyData.map(item => item.month);
-        const monthlyCounts = monthlyData.map(item => item.count);
-
-        // Course Chart
-        const courseCtx = document.getElementById('courseChart').getContext('2d');
-        let courseChart = new Chart(courseCtx, {
+    // Course (pie) with dual filters
+    const courseChart = new Chart(
+        document.getElementById('courseChart'), {
             type: 'pie',
-            data: {
-                labels: courseLabels,
-                datasets: [{
-                    label: 'Course Enrollment',
-                    data: courseCounts,
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8'],
-                    hoverOffset: 4
-                }]
-            }
+            data: { labels:[], datasets:[{ data:[], backgroundColor: [] }] }
         });
 
-        // Monthly Registration Chart
-        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
-        let monthlyChart = new Chart(monthlyCtx, {
+    function updateCourseChart(){
+        const st = document.getElementById('courseStatusFilter').value;
+        const cf = document.getElementById('courseFilter').value;
+        const dataObj = courseByStatus[st] || {};
+        const labels = [], data=[];
+        for (let c in dataObj){
+            if (!cf||cf===c){
+                labels.push(c);
+                data.push(dataObj[c]);
+            }
+        }
+        if (!data.length){
+            courseChart.canvas.style.display='none'; document.getElementById('courseNoData').style.display='block';
+        } else {
+            courseChart.canvas.style.display='block'; document.getElementById('courseNoData').style.display='none';
+            courseChart.data.labels = labels;
+            courseChart.data.datasets[0].data = data;
+            courseChart.data.datasets[0].backgroundColor = labels.map((_,i)=>['#007bff','#28a745','#ffc107','#dc3545','#17a2b8'][i%5]);
+            courseChart.update();
+        }
+    }
+    document.getElementById('courseStatusFilter').onchange = updateCourseChart;
+    document.getElementById('courseFilter').onchange = updateCourseChart;
+    updateCourseChart();
+
+    // Monthly (line) with dual filters
+    const monthlyChart = new Chart(
+        document.getElementById('monthlyChart'), {
             type: 'line',
-            data: {
-                labels: monthlyLabels,
-                datasets: [{
-                    label: 'Monthly Registrations',
-                    data: monthlyCounts,
-                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    fill: true
-                }]
+            data: { labels:[], datasets:[{ label:'Regs', data:[], fill:true }] },
+            options: {
+                responsive:true,
+                scales:{
+                    x:{ type:'time', time:{ parser:'yyyy-MM', unit:'month', tooltipFormat:'yyyy-MM' } },
+                    y:{ beginAtZero:true }
+                }
             }
         });
 
-        // Chart Filters
-        document.getElementById('courseFilter').addEventListener('change', filterData);
-        document.getElementById('monthFilter').addEventListener('change', filterData);
-
-        function filterData() {
-            const courseFilter = document.getElementById('courseFilter').value;
-            const monthFilter = document.getElementById('monthFilter').value;
-
-            const filteredCourseData = courseData.filter(item => courseFilter === '' || item.course === courseFilter);
-            const filteredMonthlyData = monthlyData.filter(item => monthFilter === '' || item.month.startsWith(monthFilter));
-
-            // Handle course chart visibility
-            if (filteredCourseData.length === 0) {
-                document.getElementById('courseChart').style.display = 'none';
-                document.getElementById('courseNoData').style.display = 'block';
-            } else {
-                document.getElementById('courseChart').style.display = 'block';
-                document.getElementById('courseNoData').style.display = 'none';
+    function updateMonthlyChart(){
+        const st = document.getElementById('monthStatusFilter').value;
+        const mf = document.getElementById('monthFilter').value;
+        const dataObj = monthlyByStatus[st] || {};
+        const labels = [], data=[];
+        for (let m in dataObj){
+            if (!mf||m.startsWith(mf)){
+                labels.push(m);
+                data.push(dataObj[m]);
             }
-
-            // Handle monthly chart visibility
-            if (filteredMonthlyData.length === 0) {
-                document.getElementById('monthlyChart').style.display = 'none';
-                document.getElementById('monthlyNoData').style.display = 'block';
-            } else {
-                document.getElementById('monthlyChart').style.display = 'block';
-                document.getElementById('monthlyNoData').style.display = 'none';
-            }
-
-            updateChart(courseChart, filteredCourseData.map(item => item.course), filteredCourseData.map(item => item.count), 'Course Enrollment');
-            updateChart(monthlyChart, filteredMonthlyData.map(item => item.month), filteredMonthlyData.map(item => item.count), 'Monthly Registrations');
         }
-
-        function updateChart(chart, labels, data, label) {
-            chart.data.labels = labels;
-            chart.data.datasets[0].data = data;
-            chart.data.datasets[0].label = label;
-            chart.update();
+        if (!data.length){
+            monthlyChart.canvas.style.display='none'; document.getElementById('monthlyNoData').style.display='block';
+        } else {
+            monthlyChart.canvas.style.display='block'; document.getElementById('monthlyNoData').style.display='none';
+            monthlyChart.data.labels = labels;
+            monthlyChart.data.datasets[0].data = data;
+            monthlyChart.update();
         }
-    </script>
-
+    }
+    document.getElementById('monthStatusFilter').onchange = updateMonthlyChart;
+    document.getElementById('monthFilter').onchange = updateMonthlyChart;
+    updateMonthlyChart();
+</script>
 </body>
 </html>

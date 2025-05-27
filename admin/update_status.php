@@ -5,7 +5,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = intval($_POST['id']);
     $status = $_POST['status'];
 
-    $allowed = ['Waiting', 'Processing', 'Completed'];
+    $allowed = ['Pending', 'Processing', 'Done'];
     if (!in_array($status, $allowed)) {
         echo json_encode(['success' => false, 'message' => 'Invalid status']);
         exit;

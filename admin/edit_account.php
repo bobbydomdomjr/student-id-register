@@ -1,49 +1,46 @@
 <?php
-session_start();
-include 'config.php';
+// admin/edit_account.php
+require_once __DIR__ . '/../includes/init.php';
 
-// Redirect if not super admin
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'super_admin') {
-    http_response_code(403);
-    echo "Unauthorized";
-    exit();
-}
-
-// Handle Fetch for Modal (AJAX)
-if (isset($_GET['id'])) {
-    $id = intval($_GET['id']);
-    $stmt = $conn->prepare("SELECT * FROM admin WHERE id = ?");
-    $stmt->bind_param("i", $id);
+if ($_SERVER['REQUEST_METHOD']==='GET' && isset($_GET['id'])) {
+    // fetch JSON for modal
+    $id = (int)$_GET['id'];
+    $stmt = $conn->prepare("SELECT id,username,role FROM admin WHERE id=? AND role IN ('admin','staff')");
+    $stmt->bind_param('i',$id);
     $stmt->execute();
-    $result = $stmt->get_result();
-    echo json_encode($result->fetch_assoc());
-    exit();
+    $u = $stmt->get_result()->fetch_assoc() ?: [];
+    header('Content-Type: application/json');
+    echo json_encode($u);
+    exit;
 }
 
-// Handle Form Submission for Update
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id = intval($_POST['id']);
-    $username = trim($_POST['username']);
-    $role = $_POST['role'];
+// otherwise handle POST update
+$id       = (int)$_POST['id'];
+$username = trim($_POST['username']);
+$password = $_POST['password'];
+$role     = $_POST['role'];
 
-    if (!empty($_POST['password'])) {
-        $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-        $sql = "UPDATE admin SET username = ?, password = ?, role = ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssi", $username, $password, $role, $id);
-    } else {
-        $sql = "UPDATE admin SET username = ?, role = ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssi", $username, $role, $id);
-    }
-
-    if ($stmt->execute()) {
-        $_SESSION['success'] = "Account updated successfully!";
-    } else {
-        $_SESSION['error'] = "Update failed.";
-    }
-
-    header("Location: account_list.php");
-    exit();
+if (!$id || !$username || !in_array($role,['admin','staff'])) {
+    $_SESSION['flash'] = ['type'=>'danger','msg'=>'Invalid update.'];
+    header('Location: user_management.php');
+    exit;
 }
-?>
+
+// prevent renaming superadmin or editing others?
+// e.g. if($id===1) { … }
+
+// update username+role
+$stmt = $conn->prepare("UPDATE admin SET username=?, role=? WHERE id=?");
+$stmt->bind_param('ssi',$username,$role,$id);
+$stmt->execute();
+
+// update password if given
+if ($password!=='') {
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+    $stmt = $conn->prepare("UPDATE admin SET password=? WHERE id=?");
+    $stmt->bind_param('si',$hash,$id);
+    $stmt->execute();
+}
+
+$_SESSION['flash'] = ['type'=>'success','msg'=>'Account updated.'];
+header('Location: user_management.php');

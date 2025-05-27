@@ -1,12 +1,11 @@
 <?php
 session_start();
-if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'superadmin') {
-    header("Location: login.php");
-    exit();
-}
 include('../db.php'); // Include database connection
 
-
+if (!isset($_SESSION['admin'])) {
+    header("Location: index.php");
+    exit();
+}
 
 if (isset($_GET['id'])) {
     $id = (int) $_GET['id']; // Cast the ID to an integer for safety

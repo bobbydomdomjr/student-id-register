@@ -1,7 +1,7 @@
 <?php
 session_start();
-if (!isset($_SESSION['username']) || $_SESSION['role'] !== 'superadmin') {
-    header("Location: login.php");
+if (!isset($_SESSION['admin'])) {
+    header("Location: index.php");
     exit();
 }
 include('../db.php');
