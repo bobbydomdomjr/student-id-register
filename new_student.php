@@ -1,6 +1,7 @@
 <?php
+global $conn;
 session_start();
-include 'db.php'; // adjust if your DB config file is named differently
+require_once __DIR__ . '/db.php';
 
 // Generate CSRF token if it doesn't exist
 if (empty($_SESSION['csrf_token'])) {
@@ -114,7 +115,7 @@ if ($config['queuing_enabled'] == 0) {
 </div>
 
 <!-- Form Start -->
-<div class="container mt-3" style="animation: fadeIn 0.8s ease-in-out;">
+<div class="container mt-3">
     <div class="card shadow-lg">
         <header class="card-header">
             <p>Welcome to the Student ID Registration Form for STI College Naga!</p>
@@ -123,10 +124,11 @@ if ($config['queuing_enabled'] == 0) {
         </header>
         <article class="card-body">
             <form id="studentform" action="register.php" method="post" novalidate>
-                <!-- CSRF Token -->
-                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
-                <!-- Hidden Email Field (constructed) -->
+                <!-- 1. CSRF -->
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <!-- 2. Hidden email -->
                 <input type="hidden" id="email" name="email">
+
                 <!-- Student Information -->
                 <div class="row g-1 mt-1">
                     <div class="col-md-3">
@@ -249,41 +251,34 @@ if ($config['queuing_enabled'] == 0) {
                         </select>
                     </div>
                 </div>
-                <!-- Agreement Checkbox -->
+
                 <div class="form-check mt-3">
-                    <input class="form-check-input" type="checkbox" id="agree" name="agree" value="Y">
+                    <input class="form-check-input" type="checkbox" id="agree">
                     <label class="form-check-label" for="agree">
                         <small class="text-muted">By checking this box and clicking 'Proceed', you accept the <a href="https://www.sti.edu/dataprivacy.asp" data-bs-toggle="modal">Privacy Policy</a>.<span class="reqcolor">*</span></small>
                     </label>
                 </div>
-                <!-- Submit Button -->
-                <div class="mt-2">
-                    <button type="button" id="submitBtn" class="btn btn-primary w-100" disabled>Proceed</button>
-                </div>
-                <footer class="text-center text-muted">
-                    <small>&copy; <span class="currentYear"></span> Student ID Registration System</small>
-                </footer>
+                <button type="button" id="submitBtn" class="btn btn-primary w-100 mt-3" disabled>
+                    Proceed
+                </button>
             </form>
         </article>
     </div>
 </div>
-</div>
-</div>
+
 <br>
 <!-- End of Form -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="./config/global.js"></script>
 <script>
     $(document).ready(function() {
         // Set the current year in the footer.
         $(".currentYear").text(new Date().getFullYear());
 
-        // Define appUrl for AJAX requests.
-        const appUrl = window.location.hostname === 'localhost' ? `${window.location.origin}/stu_reg` : window.location.origin;
-
         /* --- Enable Submit Button when Agreement Checked --- */
-        $("#agree").change(function () {
-            $("#submitBtn").prop("disabled", !this.checked);
+        $('#agree').on('change', function(){
+            $('#submitBtn').prop('disabled', !this.checked);
         });
 
         /* --- Dynamic Year Level Options Based on Course Selection --- */
@@ -397,34 +392,25 @@ if ($config['queuing_enabled'] == 0) {
         });
 
         /* --- Confirmation Modal & Duplicate Student Number Check on Proceed Click --- */
-        $("#submitBtn").click(function () {
-            var form = $('#studentform')[0];
+        $('#submitBtn').on('click', function(){
+            const form = $('#studentform')[0];
             if (!form.checkValidity()) {
-                $("#studentform").find("input, select, textarea").each(function(){
-                    if (!this.checkValidity()) {
-                        $(this).addClass("emphasize-error");
-                    } else {
-                        $(this).removeClass("emphasize-error");
-                    }
-                });
-                alert("Please fill all the required fields.");
+                $(form).addClass('was-validated');
                 return;
             }
-            if (!validateEmailMask()) {
-                $("#emailGroup").focus();
+            const emailValid = $('#email').val().length>0;
+            if (!emailValid) {
+                alert('Please complete the email fields.');
                 return;
             }
-            var studentNo = $("#studentno").val();
-            $.ajax({
-                url: `${appUrl}/admin/check_studentno.php`,
-                method: "POST",
-                data: { studentno: studentNo },
-                success: function(response) {
-                    if (response.trim() === "exists") {
-                        alert("Duplicate entry: A student with this student number already exists.");
-                        return;
-                    } else {
-                        var details = `
+            const stuNo = $('#studentno').val();
+            // Duplicate check
+            $.post(`${appUrl()}/admin/check_studentno.php`, { studentno: stuNo }, function(response){
+                if (response.trim() === "exists") {
+                    alert("Duplicate entry: A student with this student number already exists.");
+                    return;
+                } else {
+                    var details = `
                         <div class="row">
                             <div class="col-md-6">
                                 <p><strong>Last Name:</strong> ${$("#lastname").val()}</p>
@@ -446,15 +432,14 @@ if ($config['queuing_enabled'] == 0) {
                             </div>
                         </div>
                         `;
-                        $("#confirmDetails").html(details);
-                        $("#confirmModal").modal("show");
-                    }
+                    $("#confirmDetails").html(details);
+                    $("#confirmModal").modal("show");
                 }
             });
         });
 
-        $("#confirmSubmit").click(function () {
-            $("#studentform").submit();
+        $('#confirmSubmit').on('click', function(){
+            $('#studentform').submit();
         });
     });
 </script>

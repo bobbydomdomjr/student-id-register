@@ -1,18 +1,34 @@
 <?php
-global $conn;
-include './../db.php';
+// admin/check_studentno.php
 
-if (isset($_POST['studentno'])) {
-    $studentno = $_POST['studentno'];
-    // Use a prepared statement to prevent SQL injection (even though studentno is auto-generated)
-    $stmt = $conn->prepare("SELECT COUNT(*) AS count FROM student_registration WHERE studentno = ?");
+// 1) Include your DB connection.
+//    Adjust the path if this file lives elsewhere.
+global $conn;
+require_once __DIR__ . '/../db.php';
+
+// 2) Only proceed if studentno POSTed
+if (!isset($_POST['studentno'])) {
+    http_response_code(400);
+    exit('bad request');
+}
+
+// 3) Ensure plain-text response
+header('Content-Type: text/plain; charset=UTF-8');
+
+$studentno = $_POST['studentno'];
+
+// 4) Prepared statement to count matching studentno
+if ($stmt = $conn->prepare("SELECT COUNT(*) AS cnt FROM student_registration WHERE studentno = ?")) {
     $stmt->bind_param("s", $studentno);
     $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
-    if ($row['count'] > 0) {
-        echo "exists";
-    } else {
-        echo "not exists";
-    }
+    $stmt->bind_result($cnt);
+    $stmt->fetch();
+    $stmt->close();
+
+    echo ($cnt > 0) ? 'exists' : 'not exists';
+    exit;
+} else {
+    // If prepare fails, signal error
+    http_response_code(500);
+    exit('error');
 }

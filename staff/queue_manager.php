@@ -280,7 +280,7 @@ if (!isset($_SESSION['admin']) || $_SESSION['role']!=='staff') {
 
         function upd(studentno, status) {
             axios.post(
-            `${window.location.origin}/stu_reg/staff/api/update_status.php`,
+            `${appUrl()}/staff/api/update_status.php`,
             new URLSearchParams({ studentno, status })
             )
             .then(r => {
