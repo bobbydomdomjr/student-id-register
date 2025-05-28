@@ -188,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="container-box">
             <!-- Logo Section -->
             <div class="logo-box">
-                <img src="../../pictures/thumbnail_STI_Localized_Logo_Naga.png" alt="Logo" style="width: 100%; height: auto; object-fit: contain;">
+                <img src="../../pictures/12.jpg" alt="Logo" style="width: 100%; height: auto; object-fit: contain;">
             </div>
 
             <!-- Login Heading -->
@@ -220,8 +220,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <i class="fas fa-sign-in-alt"></i> Login
     </button>
 
-    <footer class="mt-3">
-        <small>&copy; 2025 Student Registration System</small>
+    <footer class="text-center text-muted mt-5">
+        <small>&copy; 2025 Student ID Registration System | Bobby Domdom Jr</small>
     </footer>
 </form>
         </div>
