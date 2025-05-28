@@ -1,6 +1,7 @@
 MIT License
 
 Copyright (c) 2025 Bobby Domdom Jr
+Copyright (c) 2025 Ron Hedwig Zape
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +20,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Additionally, you cannot claim copyright or ownership of the Software.
+
+The footer signatures with version, hash and URL link to the official website
+of the project MUST BE RETAINED, MUST BE VISIBLE IN EVERY PAGE and CANNOT BE
+MODIFIED.
+Footer signatures are in the format
+"© 2025 Student ID Registration System | Bobby Domdom Jr<".
+
