@@ -49,19 +49,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Login - ID Registration System</title>
+    <title>Login into SIDRS</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
-    <style>
+   <style>
         body {
-            background: linear-gradient(to right, #4e73df, #1cc88a);
+            background: #ffff;
             height: 100vh;
             margin: 0;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            font-family: "Helvetica Neue", Arial, sans-serif;
         }
 
         .wrapper {
@@ -77,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background-color: white;
             border-radius: 12px;
             border: 1px solid #dee2e6;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.20);
             width: 400px;
             padding: 25px;
             text-align: center;
@@ -97,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         h5 {
             font-size: 1.6rem;
             font-weight: bold;
-            color: #4e73df;
+            color: #4267B2;
             margin-bottom: 5px;
             margin-top: 10px;
         }
@@ -109,13 +110,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .form-control {
-            padding: 12px 15px;
+            padding: 12px 18px;
             border-radius: 8px;
             font-size: 14px;
         }
 
         .btn-custom {
-            width: 100%;
+            width: 100%;    
             padding: 12px;
             font-size: 15px;
             border-radius: 8px;
@@ -127,48 +128,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
         }
 
-        .btn-green {
-            background-color: #28a745;
+        .btn-blue {
+            background-color: #4267B2;
             color: white;
             border: none;
         }
 
-        .btn-green:hover {
-            background-color: #218838;
+        .btn-blue:hover {
+            background-color: #007bb8;
         }
 
         footer {
-            margin-top: 30px;
+            margin-top: 20px;
             font-size: 14px;
             color: #495057;
             letter-spacing: 0.5px;
         }
 
         .input-icon {
-            position: relative;
-        }
+    position: relative;
+}
 
 
-        .input-group-text {
-            background-color: #f8f9fa;
-            border: 1px solid #ced4da;
-            border-right: none;
-            border-radius: 8px 0 0 8px;
-            padding: 12px 12px;
-            color:rgb(30, 111, 192);
-        }
+.input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    padding: 12px 12px;
+    color:rgb(30, 111, 192);
+}
 
 
-        .input-group-prepend,
-        .input-group-append {
-            display: flex;
-            align-items: center;  /* Ensure icons are aligned correctly */
-        }
+.input-group-prepend,
+.input-group-append {
+    display: flex;
+    align-items: center;  /* Ensure icons are aligned correctly */
+}
 
-        .input-group .form-control:focus {
-            box-shadow: none;  /* Remove box-shadow when focused for clean appearance */
-            border-color: #80bdff;  /* Change border color on focus */
-        }
+.input-group .form-control:focus {
+    box-shadow: none;  /* Remove box-shadow when focused for clean appearance */
+    border-color: #80bdff;  /* Change border color on focus */
+}
 
         .form-group {
             margin-bottom: 18px;
@@ -194,38 +195,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
 
         <!-- Login Heading -->
-        <h5>STAFF LOGIN</h5>
-        <p>Enter your credentials to access the system.</p>
+            <h5>Staff Login</h5><p>
 
-        <!-- Show Error Message -->
-        <?php if (!empty($error)) : ?>
-            <div class="alert alert-danger"><?php echo $error; ?></div>
-        <?php endif; ?>
+            <!-- Show Error Message -->
+            <?php if (!empty($error)) : ?>
+                <div class="alert alert-danger"><?php echo $error; ?></div>
+            <?php endif; ?>
 
-        <!-- Login Form -->
-        <form method="POST" action="" id="loginForm">
-            <div class="form-group">
-                <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-user"></i></span>
-                    <input type="text" name="username" class="form-control" placeholder="Username" required>
-                </div>
-            </div>
+ <!-- Login Form -->
+<form method="POST" action="" id="loginForm">
+    <div class="form-group">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-user"></i></span>
+            <input type="text" name="username" class="form-control" placeholder="Enter Username" required>
+        </div>
+    </div>
 
-            <div class="form-group">
-                <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                    <input type="password" name="password" class="form-control" id="password" placeholder="Password" required>
-                </div>
-            </div>
+    <div class="form-group">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+            <input type="password" name="password" class="form-control" id="password" placeholder="Enter Password" required>
+        </div>
+    </div>
 
-            <button type="submit" class="btn btn-green btn-custom">
-                <i class="fas fa-sign-in-alt"></i> Login
-            </button>
+    <button type="submit" class="btn btn-blue btn-custom">Log In</button>
 
-    <footer class="text-center text-muted mt-5">
+    <footer class="text-center text-muted mt-2">
         <small>&copy; 2025 Student ID Registration System | Bobby Domdom Jr</small>
     </footer>
-        </form>
+</form>
     </div>
 
     <!-- Footer Section -->
