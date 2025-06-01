@@ -1,67 +1,109 @@
 <?php
+// chat/fetch_messages.php
 session_start();
-require '../db.php';
+require_once __DIR__ . '/../db.php';
+
+// If user not logged in → return empty
+if (!isset($_SESSION['user_id'], $_SESSION['role'])) {
+    echo json_encode([
+        'messages' => '',
+        'unread'   => 0
+    ]);
+    exit;
+}
 
 $user_id = $_SESSION['user_id'];
-$role = $_SESSION['role'];
+$role    = $_SESSION['role'];
 
-$stmt = $conn->prepare("SELECT * FROM messages ORDER BY created_at ASC");
+// 1) Fetch only messages where this role appears as sender_role OR receiver_role
+$stmt = $conn->prepare("
+    SELECT *
+    FROM messages
+    WHERE sender_role = ? OR receiver_role = ?
+    ORDER BY created_at ASC
+");
+$stmt->bind_param("ss", $role, $role);
 $stmt->execute();
 $result = $stmt->get_result();
 
 $messages_html = '';
-$unread = 0;
-$unread_ids = [];
+$unread       = 0;
+$unread_ids   = [];
 
 while ($row = $result->fetch_assoc()) {
-    $is_sender = ($row['sender_id'] == $user_id && $row['sender_role'] == $role);
+    $is_sender = ($row['sender_id'] == $user_id && $row['sender_role'] === $role);
 
-    // Get sender name
+    // Lookup sender's username (from `admin` table)
     $sender_name = 'Unknown';
-    if ($row['sender_role'] === 'admin') {
-        $stmtSender = $conn->prepare("SELECT name FROM admin WHERE id = ?");
-    } elseif ($row['sender_role'] === 'staff') {
-        $stmtSender = $conn->prepare("SELECT name FROM staff WHERE id = ?");
-    }
-    if (isset($stmtSender)) {
-        $stmtSender->bind_param("i", $row['sender_id']);
-        $stmtSender->execute();
-        $senderResult = $stmtSender->get_result();
-        if ($sender = $senderResult->fetch_assoc()) {
-            $sender_name = $sender['name'];
+    if ($row['sender_role'] === 'admin' || $row['sender_role'] === 'staff') {
+        $stm = $conn->prepare("SELECT username FROM admin WHERE id = ?");
+        $stm->bind_param("i", $row['sender_id']);
+        $stm->execute();
+        $res = $stm->get_result();
+        if ($r2 = $res->fetch_assoc()) {
+            $sender_name = $r2['username'];
         }
+        $stm->close();
     }
 
     // Format timestamp
     $timestamp = date('Y-m-d H:i', strtotime($row['created_at']));
 
-    // Build message HTML block with sender and timestamp
-    $messages_html .= '<div class="mb-1 ' . ($is_sender ? 'text-end' : 'text-start') . '">';
-    $messages_html .= '<small class="text-muted d-block">' . htmlspecialchars($sender_name) . ' (' . ucfirst($row['sender_role']) . ') - ' . $timestamp . '</small>';
-    $messages_html .= '<span class="badge bg-' . ($is_sender ? 'primary' : 'secondary') . '">' . htmlspecialchars($row['message']) . '</span>';
-    $messages_html .= '</div>';
+    // Build each line with an avatar + bubble.
+    // If receiver (incoming): avatar on left, bubble next.
+    // If sender (outgoing): bubble first, avatar on right.
+    if ($is_sender) {
+        $messages_html .= '
+          <div class="d-flex justify-content-end align-items-start mb-2">
+            <div class="chat-bubble chat-bubble-sender">
+              <div class="small text-white-50 mb-1">' . htmlspecialchars($sender_name) . ' (' . ucfirst($row['sender_role']) . ')</div>
+              <div>' . nl2br(htmlspecialchars($row['message'])) . '</div>
+              <div class="small text-white-50 text-end mt-1">' . $timestamp . '</div>
+            </div>
+            <div class="avatar avatar-sender ms-2">
+              <i class="fas fa-user"></i>
+            </div>
+          </div>
+        ';
+    } else {
+        $messages_html .= '
+          <div class="d-flex justify-content-start align-items-start mb-2">
+            <div class="avatar avatar-receiver me-2">
+              <i class="fas fa-user"></i>
+            </div>
+            <div class="chat-bubble chat-bubble-receiver">
+              <div class="small text-muted mb-1">' . htmlspecialchars($sender_name) . ' (' . ucfirst($row['sender_role']) . ')</div>
+              <div>' . nl2br(htmlspecialchars($row['message'])) . '</div>
+              <div class="small text-muted text-end mt-1">' . $timestamp . '</div>
+            </div>
+          </div>
+        ';
+    }
 
-    // Collect unread info if message is unread and addressed to this user (or broadcast)
+    // Count unread only if addressed to me (receiver_role matches AND receiver_id = 0 or my ID)
     if (
-        ($row['receiver_id'] == $user_id || $row['receiver_id'] == 0) && // receiver is user or broadcast
         $row['receiver_role'] === $role &&
+        ($row['receiver_id'] == 0 || $row['receiver_id'] == $user_id) &&
         $row['is_read'] == 0
     ) {
         $unread++;
         $unread_ids[] = $row['id'];
     }
 }
+$stmt->close();
 
-// Mark unread messages as read once fetched (optional, so they won't keep showing as unread)
+// 2) Mark unread messages as read (only those addressed to me)
 if (!empty($unread_ids)) {
-    $ids_placeholder = implode(',', array_fill(0, count($unread_ids), '?'));
-    $types = str_repeat('i', count($unread_ids));
-    $stmtUpdate = $conn->prepare("UPDATE messages SET is_read = 1 WHERE id IN ($ids_placeholder)");
-    $stmtUpdate->bind_param($types, ...$unread_ids);
-    $stmtUpdate->execute();
+    $placeholders = implode(',', array_fill(0, count($unread_ids), '?'));
+    $types        = str_repeat('i', count($unread_ids));
+    $stmtUpd      = $conn->prepare("UPDATE messages SET is_read = 1 WHERE id IN ($placeholders)");
+    $stmtUpd->bind_param($types, ...$unread_ids);
+    $stmtUpd->execute();
+    $stmtUpd->close();
 }
 
+// 3) Return JSON
 echo json_encode([
     'messages' => $messages_html,
-    'unread' => $unread
+    'unread'   => $unread
 ]);

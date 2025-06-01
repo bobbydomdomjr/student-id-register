@@ -31,12 +31,6 @@ $navItems = [
         'icon' => 'bx bx-file',
         'label' => 'Reports & Logs'
     ],
-    [
-        'href' => 'logout.php',
-        'icon' => 'bx bx-log-out',
-        'label' => 'Logout',
-        'confirm' => true
-    ],
 ];
 
 $current = basename($_SERVER['PHP_SELF']);

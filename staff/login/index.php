@@ -11,25 +11,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
 
-    // Prepare SQL query to fetch admin details
-    $sql = "SELECT * FROM admin WHERE username = ?";
+    // Prepare SQL query to fetch admin details (admins and staff both live in `admin` table)
+    $sql = "SELECT id, username, password, role FROM admin WHERE username = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    // Check if admin exists
+    // Check if user exists
     if ($result->num_rows == 1) {
         $row = $result->fetch_assoc();
 
-        // Verify password using password_verify()
+        // Verify password
         if (password_verify($password, $row['password'])) {
-            // Regenerate session ID to prevent session fixation
+            // Regenerate session ID to prevent fixation
             session_regenerate_id(true);
-            $_SESSION['admin'] = $username;
-            $_SESSION['role'] = $row['role']; // Store the role from the admin table in session
-            $_SESSION['welcome_message'] = "Welcome to the Staff Panel!";
-            header("Location: ./../dashboard.php");
+
+            // Store id, username, role in session
+            $_SESSION['user_id']  = $row['id'];
+            $_SESSION['username'] = $row['username'];
+            $_SESSION['role']     = $row['role'];
+            $_SESSION['welcome_message'] = "Welcome, {$row['username']} to {$row['role']} panel!";
+
+            // Redirect based on role
+            header("Location: ../dashboard.php");
+            if(!$row['role']) {
+                // Fallback—if there were other roles in future
+                header("Location: ./index.html");
+            }
             exit();
         } else {
             $error = "Invalid password!";

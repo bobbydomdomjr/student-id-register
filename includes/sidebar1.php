@@ -5,7 +5,6 @@ $navItems = [
     ['href' => 'registration.php',        'icon' => 'bx bx-user-plus',        'label' => 'Registration'],
     ['href' => 'search.php',   'icon' => 'bx bx-search',      'label' => 'Search', 'badge'],
     ['href' => 'picture_upload.php',      'icon' => 'bx bx-camera',  'label' => 'Picture Management'],
-    ['href' => 'logout.php',          'icon' => 'bx bx-log-out',      'label' => 'Logout', 'confirm' => true],
 ];
 
 $current = basename($_SERVER['PHP_SELF']);
