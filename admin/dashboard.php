@@ -2,6 +2,10 @@
 // admin/dashboard.php
 require_once __DIR__ . '/../includes/init.php';
 
+
+$user_id = $_SESSION['admin']['user_id'] ?? null;
+$username = $_SESSION['admin']['username'] ?? null;
+$role = $_SESSION['admin']['role'] ?? null;
 // Welcome message (once after login)
 $welcome_message = $_SESSION['welcome_message'] ?? '';
 unset($_SESSION['welcome_message']);
@@ -81,7 +85,7 @@ $datasetsJson = json_encode($datasets);
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Panel</title>
 
     <!-- Bootstrap 5 -->
@@ -109,14 +113,66 @@ $datasetsJson = json_encode($datasets);
 <?php include __DIR__ . '/../includes/sidebar.php'; ?>
 
 <section class="home-section">
-    <div class="text">Dashboard</div>
-    <hr>
+<!-- Top Navigation Bar -->
+<div class="d-flex flex-wrap justify-content-between align-items-center px-3 py-2 border-bottom bg-white shadow-sm sticky-top" style="z-index: 1030;">
+  <!-- Left: Dashboard Title -->
+  <div class="h5 mb-0 text-primary">📊 Dashboard</div>
 
-    <?php if ($welcome_message): ?>
-        <div id="welcomeMessage">🎉 <?= htmlspecialchars($welcome_message) ?></div>
+  <!-- Right: Notification Bell + Toast + User Dropdown -->
+  <div class="d-flex align-items-center gap-3">
+
+    <!-- Notification Bell -->
+    <div class="position-relative">
+      <button id="notificationButton" class="btn btn-light rounded-circle shadow-sm position-relative">
+        <i class="fas fa-bell text-primary"></i>
+        <span id="notificationBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; display: none;">
+          0
+        </span>
+      </button>
+    </div>
+
+    <!-- Toast (Welcome Message) -->
+    <?php if (!empty($welcome_message)): ?>
+      <div aria-live="polite" aria-atomic="true" class="position-relative">
+        <div id="welcomeToast" class="toast align-items-center text-white bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">
+              🎉 <?= htmlspecialchars($welcome_message) ?>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const toastEl = document.getElementById('welcomeToast');
+          if (toastEl) {
+            const toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+            toast.show();
+          }
+        });
+      </script>
     <?php endif; ?>
 
-    <div class="container-fluid">
+    <!-- User Profile Dropdown -->
+    <div class="dropdown">
+      <a href="#" class="d-flex align-items-center text-dark text-decoration-none dropdown-toggle" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-user-circle fa-lg me-2 text-primary"></i>
+        <span class="fw-semibold"><?= htmlspecialchars($_SESSION['admin'] ?? 'Admin') ?></span>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userDropdown">
+        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i> My Profile</a></li>
+        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i> Settings</a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-danger" href="logout.php" onclick="return confirmLogout();"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<p>
+
         <div class="row g-3">
             <!-- Students Today -->
             <div class="col-sm-6 col-md-2">
@@ -186,10 +242,62 @@ $datasetsJson = json_encode($datasets);
                 </div>
             </div>
         </div>
+<!-- Charts Side by Side -->
+<div class="row mt-4">
+  <!-- User Registrations Bar Chart -->
+  <div class="col-md-6 mb-4">
+    <div class="card p-3 h-100">
+      <h5>User Registrations (This Month)</h5>
+      <div style="position: relative; width: 100%; height: 300px;">
+        <canvas id="registrationChart"></canvas>
+      </div>
+    </div>
+  </div>
 
-        <footer class="text-center text-muted mt-5">
-            <small>&copy; 2025 Student Registration System</small>
-        </footer>
+  <!-- Queue Activity Area Chart -->
+  <div class="col-md-6 mb-4">
+    <div class="card p-3 h-100">
+      <h5>Queue Activity (Last 14 Days)</h5>
+      <div style="position: relative; width: 100%; height: 300px;">
+        <canvas id="queueActivityChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Floating Chat Button -->
+<!-- Font Awesome CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<<!-- Chat Button -->
+<div id="chat-button" style="position:fixed;bottom:20px;right:20px;cursor:pointer;z-index:9999;">
+  <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center position-relative" id="open-chat" style="width: 50px; height: 50px;">
+    <i class="fas fa-comments"></i>
+    <span id="unread-count" class="badge bg-danger position-absolute top-0 start-100 translate-middle p-1" style="font-size: 0.7rem; display: none;">0</span>
+  </button>
+</div>
+
+<!-- Chat Box -->
+<div id="chat-box" class="card shadow border-0" style="display:none;position:fixed;bottom:80px;right:20px;width:300px;z-index:9999;">
+  <div class="card-header bg-primary text-white py-2 px-3 d-flex justify-content-between align-items-center">
+    <span>Live Chat</span>
+    <button type="button" class="btn-close btn-close-white btn-sm" id="close-chat"></button>
+  </div>
+  <div class="card-body p-2" id="chat-messages" style="height:300px;overflow-y:auto;"></div>
+  <div class="card-footer p-2">
+    <form id="chat-form" class="d-flex">
+      <input type="text" id="chat-input" class="form-control me-2" placeholder="Type a message..." required>
+      <button type="submit" class="btn btn-primary btn-sm">Send</button>
+    </form>
+  </div>
+</div>
+
+
+
+    <footer class="text-center text-muted mt-5">
+        <small>&copy; 2025 Student ID Registration System | Bobby Domdom Jr</small>
+    </footer>
     </div>
 </section>
 
@@ -205,38 +313,250 @@ $datasetsJson = json_encode($datasets);
     });
 </script>
 
-<!-- Chart.js + date-fns adapter -->
+<<!-- Chart.js + date-fns adapter -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-<script>
-    (function() {
-        const labels   = <?= $labelsJson ?>;
-        const datasets = <?= $datasetsJson ?>;
 
-        new Chart(document.getElementById('statusChart').getContext('2d'), {
-            type: 'line',
-            data: { labels, datasets: datasets.map(ds => ({ ...ds, tension: 0.2, borderWidth: 2 })) },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: { unit: 'day', tooltipFormat: 'yyyy-MM-dd' },
-                        title: { display: true, text: 'Date' }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Count' }
-                    }
-                },
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: { mode: 'index', intersect: false }
-                }
-            }
-        });
-    })();
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const chatButton = document.getElementById('open-chat');
+  const chatBox = document.getElementById('chat-box');
+  const closeChat = document.getElementById('close-chat');
+  const chatForm = document.getElementById('chat-form');
+  const chatInput = document.getElementById('chat-input');
+  const chatMessages = document.getElementById('chat-messages');
+  const unreadCount = document.getElementById('unread-count');
+
+  let isChatOpen = false;
+
+  function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+function fetchMessages() {
+  fetch('../chat/fetch_messages.php')
+    .then(response => response.json())
+    .then(data => {
+      chatMessages.innerHTML = data.messages;
+      scrollToBottom();
+
+      // Show or hide unread badge
+      if (!isChatOpen && data.unread > 0) {
+        unreadCount.textContent = data.unread;
+        unreadCount.style.display = 'inline-block';
+      } else {
+        unreadCount.style.display = 'none';
+      }
+    });
+}
+
+  chatForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const message = chatInput.value.trim();
+    if (message !== '') {
+      fetch('../chat/send_message.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message })
+      })
+      .then(() => {
+        chatInput.value = '';
+        fetchMessages();
+      });
+    }
+  });
+
+  chatButton.addEventListener('click', function () {
+    isChatOpen = !isChatOpen;
+    chatBox.style.display = isChatOpen ? 'block' : 'none';
+    if (isChatOpen) {
+      unreadCount.style.display = 'none';
+      fetchMessages();
+    }
+  });
+
+  closeChat.addEventListener('click', function () {
+    chatBox.style.display = 'none';
+    isChatOpen = false;
+  });
+
+  // Polling
+  setInterval(fetchMessages, 3000);
+});
 </script>
+
+
+<script>
+  (function() {
+    const labels = <?= $labelsJson ?> || [];
+    const rawDatasets = <?= $datasetsJson ?> || [];
+
+    // Define a default color palette for datasets if not provided
+    const defaultColors = [
+      '#3366CC', '#DC3912', '#FF9900', '#109618',
+      '#990099', '#0099C6', '#DD4477', '#66AA00'
+    ];
+
+    // Map datasets and enrich with default styles
+    const datasets = rawDatasets.map((ds, i) => ({
+      ...ds,
+      tension: 0.2,
+      borderWidth: 2,
+      fill: false,
+      borderColor: ds.borderColor || defaultColors[i % defaultColors.length],
+      backgroundColor: ds.backgroundColor || defaultColors[i % defaultColors.length],
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      pointHoverBackgroundColor: ds.borderColor || defaultColors[i % defaultColors.length],
+      pointHoverBorderColor: '#fff',
+      pointHoverBorderWidth: 2,
+      cubicInterpolationMode: 'monotone',
+    }));
+
+    const ctx = document.getElementById('statusChart').getContext('2d');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 800,
+          easing: 'easeOutQuart'
+        },
+        scales: {
+          x: {
+            type: 'time',
+            time: {
+              unit: 'day',
+              tooltipFormat: 'PPP', // pretty formatted date, e.g. May 30, 2025
+              displayFormats: {
+                day: 'MMM dd',
+              },
+            },
+            title: { display: true, text: 'Date' },
+            grid: {
+              color: '#eee',
+              borderColor: '#ccc',
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Count' },
+            grid: {
+              color: '#eee',
+              borderColor: '#ccc',
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { usePointStyle: true, padding: 15 },
+            onClick: (e, legendItem, legend) => {
+              const index = legendItem.datasetIndex;
+              const chart = legend.chart;
+              const meta = chart.getDatasetMeta(index);
+              // Toggle visibility
+              meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+              chart.update();
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            titleFont: { weight: 'bold' },
+            callbacks: {
+              label: ctx => {
+                const label = ctx.dataset.label || '';
+                return `${label}: ${ctx.parsed.y}`;
+              }
+            }
+          }
+        },
+        interaction: {
+          mode: 'nearest',
+          intersect: false
+        }
+      }
+    });
+  })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const statusChart = new Chart(document.getElementById('statusChart'), {
+    type: 'line',
+    data: {
+      labels: [...Array(30).keys()].map(i => `Day ${i+1}`),
+      datasets: [{
+        label: 'Active',
+        data: Array.from({ length: 30 }, () => Math.floor(Math.random() * 50 + 10)),
+        borderColor: '#0d6efd',
+        backgroundColor: 'rgba(13,110,253,0.1)',
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: { responsive: true }
+  });
+
+  const registrationChart = new Chart(document.getElementById('registrationChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+      datasets: [{
+        label: 'Users',
+        data: [15, 22, 13, 30],
+        backgroundColor: '#6610f2'
+      }]
+    }
+  });
+
+  const queueActivityChart = new Chart(document.getElementById('queueActivityChart'), {
+    type: 'line',
+    data: {
+      labels: [...Array(14).keys()].map(i => `Day ${i+1}`),
+      datasets: [{
+        label: 'Queue Events',
+        data: Array.from({ length: 14 }, () => Math.floor(Math.random() * 80)),
+        borderColor: '#198754',
+        backgroundColor: 'rgba(25,135,84,0.1)',
+        fill: true,
+        tension: 0.3
+      }]
+    }
+  });
+
+
+
+</script>
+<script>
+function updateNotificationBadge() {
+  fetch('../chat/fetch_messages.php')
+    .then(response => response.json())
+    .then(data => {
+      const badge = document.getElementById('notificationBadge');
+      if (data.unread > 0) {
+        badge.textContent = data.unread;
+        badge.style.display = 'inline-block';
+      } else {
+        badge.style.display = 'none';
+      }
+    });
+}
+
+// Check every 10 seconds
+setInterval(updateNotificationBadge, 10000);
+document.addEventListener('DOMContentLoaded', updateNotificationBadge);
+</script>
+
+<script>
+function confirmLogout() {
+  return confirm("Are you sure you want to logout?");
+}
+</script>
+
 </body>
 </html>
