@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 01, 2025 at 10:27 AM
+-- Generation Time: Jun 01, 2025 at 02:06 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -40,9 +40,9 @@ CREATE TABLE `admin` (
 
 INSERT INTO `admin` (`id`, `username`, `password`, `role`) VALUES
 (1, 'superadmin', '$2y$10$fbz4v.DfwqgzLkSGzbFFW.GFI5ahZ597cOoiBuQnYONEOZRRloSyS', 'superadmin'),
-(3, 'admin', '$2y$10$fbz4v.DfwqgzLkSGzbFFW.GFI5ahZ597cOoiBuQnYONEOZRRloSyS', 'admin'),
+(3, 'admin', '$2y$10$nPQz7mD0CJ5LV8jC1TuGleSEF8V1QY2R/0w8wJ/jeewI.RnpTz0ui', 'admin'),
 (4, 'staff', '$2y$10$gl1lKOfrEXGtnc3lnK0JFeT/37Ksm6g/GFpEMP.iiBJzIBieeeX72', 'staff'),
-(8, 'admin1', '$2y$10$wpAUoFJhAfPqm8KFrCe3aeDXIPLhNl5YOKzZ2PQYEsbwXz/xAR.vi', 'admin');
+(10, 'bobbydomdomjr', '$2y$10$yMr9VxoMGIPORgEs8lkkQuKg4oIKaxQEU.6bhitmURVTL3waeBPfq', 'staff');
 
 -- --------------------------------------------------------
 
@@ -216,17 +216,18 @@ CREATE TABLE `student_registration` (
 --
 
 INSERT INTO `student_registration` (`id`, `studentno`, `lastname`, `firstname`, `extname`, `middleinitial`, `dob`, `email`, `picture`, `gender`, `phone`, `course`, `yearlevel`, `block`, `address`, `contactname`, `contactno`, `relationship`, `created_at`, `updated_at`, `registration_date`, `status`, `now_serving`, `notified`) VALUES
-(73, '02000433161', 'Magadia', 'Lourd Gavin', NULL, 'B', '2025-04-15', 'magadia.13412312@nagastieduph', '../uploads/student_02000433161_1748511535.png', 'Male', '0992-986-8567', 'ABM', 'Grade 11', '', 'San Felipe', 'Magadia', '0992-986-8565', 'Guardian', '2025-04-23 01:28:41', '2025-05-31 09:37:46', '2025-05-23 09:28:41', 'done', 0, 0),
-(75, '02000495467', 'Marcelo', 'Mary Grace', NULL, 'n', '1994-02-24', 'mary.marcelo@nagastiedu', '../uploads/student_02000495467_1748529970.jpeg', 'Female', '0999-999-9889', 'IT MAWD', 'Grade 11', 'A', 'rtrhdfhchfd', 'Sfssddf', '0992-986-8565', 'Guardian', '2025-04-23 03:11:18', '2025-06-01 04:57:34', '2025-05-23 11:11:18', 'processing', 1, 0),
-(88, '02000342423', 'Asdasd', 'Adad', NULL, '', '2025-04-10', 'domdom.342423@naga.sti.edu.ph', '', 'Male', '0951-103-3187', 'ABM', 'Grade 11', '', 'wdasghj', 'JUAN ANTONIO V DELA CRUZ', '0985-413-2410', 'Sibling', '2025-04-25 05:01:40', '2025-05-31 09:38:02', '2025-05-25 13:01:40', 'done', 0, 0),
+(73, '02000433161', 'Magadia', 'Lourd Gavin', NULL, 'B', '2025-04-15', 'magadia.13412312@nagastieduph', '../uploads/student_02000433161_1748511535.png', 'Male', '0992-986-8567', 'ABM', 'Grade 11', '', 'San Felipe', 'Magadia', '0992-986-8565', 'Guardian', '2025-04-23 01:28:41', '2025-06-01 08:47:26', '2025-05-23 09:28:41', 'done', 0, 0),
+(75, '02000495467', 'Marcelo', 'Mary Grace', NULL, 'n', '1994-02-24', 'mary.marcelo@nagastiedu', '../uploads/student_02000495467_1748529970.jpeg', 'Female', '0999-999-9889', 'IT MAWD', 'Grade 11', 'A', 'rtrhdfhchfd', 'Sfssddf', '0992-986-8565', 'Guardian', '2025-04-23 03:11:18', '2025-06-01 08:51:38', '2025-05-23 11:11:18', 'done', 0, 0),
+(88, '02000342423', 'Asdasd', 'Adad', NULL, '', '2025-04-10', 'domdom.342423@naga.sti.edu.ph', '', 'Male', '0951-103-3187', 'ABM', 'Grade 11', '', 'wdasghj', 'JUAN ANTONIO V DELA CRUZ', '0985-413-2410', 'Sibling', '2025-04-25 05:01:40', '2025-06-01 08:40:18', '2025-05-25 13:01:40', 'pending', 0, 0),
 (89, '02000334544', 'Sda', 'Dasdsad', NULL, '', '2025-04-08', 'delacruz.334544@naga.sti.edu.ph', '', 'Female', '0951-103-3187', 'ABM', 'Grade 11', '', 'wad\'sdfg', 'JUAN ANTONIO V DELA CRUZ', '0950-859-0850', 'Sibling', '2025-04-25 06:22:35', '2025-05-31 01:21:22', '2025-05-25 14:22:35', 'done', 0, 0),
 (91, '02000987456', 'Mndz', 'Km', NULL, 'A', '2000-12-01', 'mndz.987456@naga.sti.edu.ph', '', 'Male', '0912-345-6789', 'BS Information Technology', '1st Yr.', 'B', '123 ABC  QWERTY', 'EM', '0998-765-4321', 'Relative', '2025-05-28 10:28:54', '2025-05-31 14:19:05', '2025-05-28 18:28:54', 'done', 0, 0),
 (92, '02000123444', 'Domdom', 'Bobby', NULL, 'V', '2000-01-01', 'domdom.123444@naga.sti.edu.ph', '../uploads/student_02000123444_1748671916.png', 'Male', '0921-124-5410', 'BS Information Technology', '4th Yr.', 'A', 'asdsd', 'Sadsd', '0953-141-2424', 'Guardian', '2025-05-29 09:16:09', '2025-05-31 04:48:53', '2025-05-29 17:16:09', 'done', 0, 0),
 (93, '02000452135', 'Doe', 'John', NULL, '', '2000-02-01', 'doe.452135@naga.sti.edu.ph', '', 'Male', '0923-418-3153', 'IT MAWD', 'Grade 12', 'A', 'asdsaxaxza', 'Saxasx', '0953-435-1511', 'Relative', '2025-05-30 04:31:22', '2025-05-31 04:54:54', '2025-05-30 12:31:22', 'done', 0, 0),
 (94, '02000531132', 'Dasd', 'Sads', NULL, '', '2104-02-01', 'dasd.531132@naga.sti.edu.ph', '', 'Male', '0962-315-3121', 'ABM', 'Grade 11', 'A', 'asdasd', 'Sdas', '0953-111-3131', 'Relative', '2025-05-30 04:33:48', '2025-05-31 05:06:32', '2025-05-30 12:33:48', 'done', 0, 1),
-(95, '02000468712', 'Arrieta', 'Levy', NULL, 'N', '2006-10-20', 'arrieta.468712@naga.sti.edu.ph', '../uploads/student_02000468712_1748606554.png', 'Male', '0921-354-3521', 'HUMSS', 'Grade 12', 'A', 'Pangasinan, Philippines', 'Bobby Domdom', '0934-541-3513', 'Relative', '2025-05-30 11:58:18', '2025-05-31 07:45:58', '2025-05-30 19:58:18', 'done', 0, 0),
-(96, '02000153153', 'James', 'Lebron', NULL, 'C', '2001-02-02', '', '../uploads/student_02000153153_1748681684.png', 'Male', '0541-315-351', 'HUMSS', 'Grade 11', 'A', 'fdfchdcb', '', '', '', '2025-05-30 23:08:12', '2025-05-31 14:34:52', '2025-05-31 07:08:12', 'done', 0, 0),
-(97, '02000203462', 'Caranza', 'Janelle France', NULL, 'L', '2004-06-03', 'caranza.203462@naga.sti.edu.ph', '../uploads/student_02000203462_1748701197.png', 'Female', '0912-345-7852', 'BS Hospitality Management', '3rd Yr.', 'A', 'Naga City', 'Jhanella', '0987-432-1851', 'Parent', '2025-05-31 14:18:08', '2025-06-01 04:57:33', '2025-05-31 22:18:08', 'done', 0, 0);
+(95, '02000468712', 'Arrieta', 'Levy', NULL, 'N', '2006-10-20', 'arrieta.468712@naga.sti.edu.ph', '../uploads/student_02000468712_1748606554.png', 'Male', '0921-354-3521', 'HUMSS', 'Grade 12', 'A', 'Pangasinan, Philippines', 'Bobby Domdom', '0934-541-3513', 'Relative', '2025-05-30 11:58:18', '2025-06-01 08:47:06', '2025-05-30 19:58:18', 'done', 0, 0),
+(96, '02000153153', 'Arieta', 'Levy', NULL, 'C', '2001-02-02', '', '../uploads/student_02000153153_1748681684.png', 'Male', '0541-315-351', 'HUMSS', 'Grade 11', 'A', 'fdfchdcb', '', '', '', '2025-05-30 23:08:12', '2025-05-31 14:34:52', '2025-05-31 07:08:12', 'done', 0, 0),
+(97, '02000203462', 'Caranza', 'Janelle France', NULL, 'L', '2004-06-03', 'caranza.203462@naga.sti.edu.ph', '../uploads/student_02000203462_1748701197.png', 'Female', '0912-345-7852', 'BS Hospitality Management', '3rd Yr.', 'A', 'Naga City', 'Jhanella', '0987-432-1851', 'Parent', '2025-05-31 14:18:08', '2025-06-01 04:57:33', '2025-05-31 22:18:08', 'done', 0, 0),
+(98, '02000748392', 'Domdom', 'Bobby', NULL, 'V', '2025-06-01', 'domdom.748392@naga.sti.edu.ph', '', 'Male', '0973-838-2828', 'BS Information Technology', '3rd Yr.', 'A', 'Albay', 'Bobby', '0973-828-2828', 'Guardian', '2025-06-01 08:50:38', '2025-06-01 08:51:39', '2025-06-01 16:50:38', 'processing', 1, 0);
 
 -- --------------------------------------------------------
 
@@ -251,7 +252,40 @@ INSERT INTO `user_logs` (`id`, `user_id`, `username`, `role`, `action`, `log_tim
 (43, 0, 'staf', 'N/A', 'Failed login attempt', '2025-06-01 15:58:16'),
 (44, 4, 'staff', 'staff', 'User logged in', '2025-06-01 15:58:21'),
 (45, 4, 'staff', 'staff', 'User logged in', '2025-06-01 16:03:48'),
-(46, 8, NULL, NULL, 'User reset their password', '2025-06-01 16:09:18');
+(46, 8, NULL, NULL, 'User reset their password', '2025-06-01 16:09:18'),
+(47, 4, 'staff', 'staff', 'User logged in', '2025-06-01 17:11:37'),
+(48, 4, 'staff', 'staff', 'User logged in', '2025-06-01 17:14:57'),
+(49, 4, 'staff', 'staff', 'User logged in', '2025-06-01 17:15:23'),
+(50, 0, 'superadmin', 'N/A', 'Failed login attempt', '2025-06-01 17:17:15'),
+(51, 3, 'admin', 'admin', 'User logged in', '2025-06-01 17:17:20'),
+(52, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:18:32'),
+(53, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:23:17'),
+(54, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:24:55'),
+(55, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:27:48'),
+(56, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:50:10'),
+(57, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:51:07'),
+(58, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:51:23'),
+(59, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:51:34'),
+(60, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:51:37'),
+(61, 3, NULL, NULL, 'User reset their password', '2025-06-01 17:51:51'),
+(62, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:52:11'),
+(63, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:52:20'),
+(64, 8, NULL, NULL, 'User reset their password', '2025-06-01 17:52:30'),
+(65, 10, 'bobbydomdomjr', 'staff', 'User logged in', '2025-06-01 17:54:04'),
+(66, 10, 'bobbydomdomjr', 'staff', 'User logged in', '2025-06-01 17:55:12'),
+(67, 10, 'bobbydomdomjr', 'staff', 'User logged in', '2025-06-01 17:55:47');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_permissions`
+--
+
+CREATE TABLE `user_permissions` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `permission` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Indexes for dumped tables
@@ -301,6 +335,13 @@ ALTER TABLE `user_logs`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `user_permissions`
+--
+ALTER TABLE `user_permissions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -308,7 +349,7 @@ ALTER TABLE `user_logs`
 -- AUTO_INCREMENT for table `admin`
 --
 ALTER TABLE `admin`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `ads`
@@ -338,13 +379,29 @@ ALTER TABLE `settings`
 -- AUTO_INCREMENT for table `student_registration`
 --
 ALTER TABLE `student_registration`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=98;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=99;
 
 --
 -- AUTO_INCREMENT for table `user_logs`
 --
 ALTER TABLE `user_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=68;
+
+--
+-- AUTO_INCREMENT for table `user_permissions`
+--
+ALTER TABLE `user_permissions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `user_permissions`
+--
+ALTER TABLE `user_permissions`
+  ADD CONSTRAINT `user_permissions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `admin` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
