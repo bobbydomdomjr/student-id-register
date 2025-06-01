@@ -27,7 +27,7 @@ if ($config['queuing_enabled'] == 0) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
-            background: linear-gradient(to right, rgb(36, 157, 238), rgb(93, 211, 231));
+            background-image: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
             height: 100vh;
             margin: 0;
             padding: 0;
