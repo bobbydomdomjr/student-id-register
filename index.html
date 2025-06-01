@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ID Registration</title>
+    <title>Registration</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/css/bootstrap.min.css">
     <style>
         body {
-            background: linear-gradient(to right,rgb(36, 157, 238),rgb(93, 211, 250));
+            background-image: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             margin: 0;
+            font-family: "Helvetica Neue", Arial, sans-serif;
         }
         .container-box {
             background-color: white;
@@ -60,8 +61,8 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0,0,0,0.12);
         }
-        .btn-green {
-            background-color: #28a745;
+        .btn-blue {
+            background-color:#008FC7;
             color: white;
             border: none;
         }
@@ -97,13 +98,13 @@
         </div>
         
         <!-- Welcome Message -->
-        <h6>STUDENT ID REGISTRATION SYSTEM</h6>
+        <h6>    </h6>
         <p>Please choose your student category:</p>
 
         <!-- Buttons for New/Old Student in Two Rows -->
         <div class="row">
             <div class="col-10">
-                <button class="btn btn-green btn-custom" onclick="window.location.href='new_student.php';">NEW STUDENT / TRANSFEREE</button>
+                <button class="btn btn-blue btn-custom" onclick="window.location.href='new_student.php';">NEW STUDENT / TRANSFEREE</button>
             </div>
             <div class="col-10 mt-3">
                 <button class="btn btn-secondary btn-custom" onclick="window.location.href='#';">OLD STUDENT (REPRINTING/STOLEN/LOST)</button>
